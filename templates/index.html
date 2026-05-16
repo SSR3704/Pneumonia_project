@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pneumonia Detection</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #0a0a0f;
+            background-image: 
+                radial-gradient(ellipse at 20% 50%, rgba(26, 95, 168, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(13, 61, 110, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 60% 80%, rgba(26, 95, 168, 0.1) 0%, transparent 50%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(26, 95, 168, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(26, 95, 168, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(circle at 10% 80%, rgba(26, 95, 168, 0.08) 0%, transparent 30%),
+                radial-gradient(circle at 90% 10%, rgba(26, 95, 168, 0.08) 0%, transparent 30%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .navbar {
+            background: rgba(13, 61, 110, 0.85);
+            backdrop-filter: blur(10px);
+            color: #a8d4f5;
+            text-align: center;
+            padding: 16px;
+            font-size: 14px;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(26, 95, 168, 0.4);
+            position: relative;
+            z-index: 10;
+            text-transform: uppercase;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 50px 20px 70px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: 3px;
+            color: white;
+            text-shadow: 0 0 30px rgba(26, 95, 168, 0.8);
+        }
+
+        .hero h1 span { color: #4a9eda; }
+
+        .hero p {
+            font-size: 15px;
+            color: #7ab3d9;
+            letter-spacing: 1px;
+        }
+
+        .scan-line {
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #4a9eda, transparent);
+            margin: 20px auto;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { opacity: 0.3; transform: scaleX(0.5); }
+            50% { opacity: 1; transform: scaleX(1); }
+            100% { opacity: 0.3; transform: scaleX(0.5); }
+        }
+
+        .card {
+            background: rgba(10, 20, 40, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(26, 95, 168, 0.4);
+            border-radius: 20px;
+            box-shadow: 
+                0 8px 32px rgba(0,0,0,0.5),
+                0 0 60px rgba(26, 95, 168, 0.1),
+                inset 0 1px 0 rgba(255,255,255,0.05);
+            padding: 40px;
+            max-width: 620px;
+            margin: -50px auto 40px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 10px; left: 10px;
+            width: 20px; height: 20px;
+            border-top: 2px solid #4a9eda;
+            border-left: 2px solid #4a9eda;
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            bottom: 10px; right: 10px;
+            width: 20px; height: 20px;
+            border-bottom: 2px solid #4a9eda;
+            border-right: 2px solid #4a9eda;
+        }
+
+        .upload-icon {
+            font-size: 55px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(74, 158, 218, 0.5));
+        }
+
+        .card h2 {
+            font-size: 20px;
+            color: #4a9eda;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .card > p {
+            color: #5a8aaa;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        /* Patient name input */
+        .patient-input {
+            width: 100%;
+            padding: 12px 18px;
+            background: rgba(26, 95, 168, 0.1);
+            border: 1px solid rgba(74, 158, 218, 0.4);
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            margin-bottom: 20px;
+            outline: none;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+
+        .patient-input::placeholder { color: #5a8aaa; }
+
+        .patient-input:focus {
+            border-color: #4a9eda;
+            box-shadow: 0 0 15px rgba(74, 158, 218, 0.2);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] { display: none; }
+
+        .file-label {
+            display: block;
+            border: 1px dashed rgba(74, 158, 218, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            color: #4a9eda;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: rgba(26, 95, 168, 0.05);
+            letter-spacing: 1px;
+        }
+
+        .file-label:hover {
+            background: rgba(26, 95, 168, 0.15);
+            border-color: #4a9eda;
+            box-shadow: 0 0 20px rgba(74, 158, 218, 0.2);
+        }
+
+        /* Image preview */
+        #image-preview {
+            display: none;
+            width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 10px;
+            border: 1px solid rgba(74, 158, 218, 0.4);
+            margin-top: 15px;
+        }
+
+        .file-name {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #5a8aaa;
+        }
+
+        .predict-btn {
+            background: linear-gradient(135deg, #1a5fa8, #0d3d6e);
+            color: white;
+            border: 1px solid rgba(74, 158, 218, 0.5);
+            padding: 14px 50px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(26, 95, 168, 0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 15px;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(26, 95, 168, 0.6);
+        }
+
+        .spinner {
+            display: none;
+            margin: 20px auto;
+            width: 45px;
+            height: 45px;
+            border: 3px solid rgba(74, 158, 218, 0.2);
+            border-top: 3px solid #4a9eda;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 14px;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .result-normal {
+            background: rgba(26, 122, 69, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.4);
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.1);
+        }
+
+        .result-pneumonia {
+            background: rgba(192, 57, 43, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.4);
+            box-shadow: 0 0 20px rgba(248, 113, 113, 0.1);
+        }
+
+        /* Confidence bar */
+        .confidence-section {
+            margin-top: 20px;
+        }
+
+        .confidence-label {
+            color: #7ab3d9;
+            font-size: 14px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .confidence-bar-bg {
+            background: rgba(26, 95, 168, 0.2);
+            border-radius: 50px;
+            height: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(74, 158, 218, 0.3);
+        }
+
+        .confidence-bar-fill {
+            height: 100%;
+            border-radius: 50px;
+            background: linear-gradient(90deg, #1a5fa8, #4a9eda);
+            transition: width 1s ease;
+            box-shadow: 0 0 10px rgba(74, 158, 218, 0.5);
+        }
+
+        .confidence-percent {
+            color: #4a9eda;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+
+        /* Grad-CAM */
+        .gradcam-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .gradcam-section h3 {
+            color: #4a9eda;
+            font-size: 16px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .gradcam-section img {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(74, 158, 218, 0.4);
+            box-shadow: 0 0 30px rgba(26, 95, 168, 0.3);
+        }
+
+        .gradcam-section p {
+            color: #5a8aaa;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        /* PDF button */
+        .pdf-btn {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 35px;
+            background: linear-gradient(135deg, #1a7a45, #0d5c32);
+            color: white;
+            border: 1px solid rgba(74, 222, 128, 0.4);
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(26, 122, 69, 0.4);
+        }
+
+        .pdf-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 122, 69, 0.6);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #2a4a6a;
+            font-size: 12px;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="trail-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
+
+    <div class="navbar">
+        Advance Project : PNEUMONIA DETECTION Using Deep Learning
+    </div>
+
+    <div class="hero">
+        <h1>PNEUMONIA <span>DETECTION</span></h1>
+        <div class="scan-line"></div>
+        <p>Upload a chest X-ray image and let AI detect pneumonia instantly</p>
+    </div>
+
+    <div class="card">
+        <div class="upload-icon">🫁</div>
+        <h2>Upload Chest X-Ray</h2>
+        <p>Supported formats: JPG, PNG, JPEG</p>
+
+        <form action="/predict" method="POST" enctype="multipart/form-data" onsubmit="showSpinner()">
+
+            <!-- Patient Name -->
+            <input type="text" name="patient_name" class="patient-input"
+                   placeholder="👤 Enter Patient Name" required>
+
+            <!-- File Upload -->
+            <div class="file-input-wrapper">
+                <label class="file-label" for="file-upload">
+                    📂 Click here to choose an X-ray image
+                </label>
+                <input type="file" id="file-upload" name="file" accept="image/*"
+                       required onchange="previewImage(this)">
+                <div class="file-name" id="file-name-display"></div>
+                <!-- Image Preview -->
+                <img id="image-preview" src="" alt="X-Ray Preview">
+            </div>
+
+            <button type="submit" class="predict-btn">🔬 Analyze X-Ray</button>
+        </form>
+
+        <div class="spinner" id="spinner"></div>
+
+        <!-- Prediction Result -->
+        {% if prediction %}
+        <div class="result-box {% if prediction == 'Pneumonia' %}result-pneumonia{% else %}result-normal{% endif %}">
+            {% if prediction == 'Pneumonia' %}
+            ⚠️ Pneumonia Detected
+            {% else %}
+            ✅ Normal - No Pneumonia
+            {% endif %}
+        </div>
+
+        <!-- Confidence Score -->
+        {% if confidence %}
+        <div class="confidence-section">
+            <div class="confidence-label">Model Confidence</div>
+            <div class="confidence-bar-bg">
+                <div class="confidence-bar-fill" style="width: {{ confidence }}%;"></div>
+            </div>
+            <div class="confidence-percent">{{ confidence }}%</div>
+        </div>
+        {% endif %}
+
+        {% endif %}
+
+        <!-- Grad-CAM -->
+        {% if gradcam_image %}
+        <div class="gradcam-section">
+            <h3>🔍 Grad-CAM: Model Focus Area</h3>
+            <img src="{{ gradcam_image }}" alt="Grad-CAM Heatmap">
+            <p>🔴 Red/Yellow = Result concluded based on thorough analysis of the area marked in red</p>
+        </div>
+        {% endif %}
+
+        <!-- PDF Download -->
+        {% if show_pdf %}
+        <a href="/download_report" class="pdf-btn">
+            📄 Download PDF Report
+        </a>
+        {% endif %}
+
+    </div>
+
+    <div class="footer">
+        Powered by VGG19 Deep Learning Model &nbsp;|&nbsp; For Educational Purposes Only
+    </div>
+
+    <script>
+        // Cursor trail
+        const canvas = document.getElementById('trail-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        let particles = [];
+        let hue = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            hue += 5;
+            for (let i = 0; i < 5; i++) {
+                particles.push({
+                    x: e.clientX,
+                    y: e.clientY,
+                    size: Math.random() * 8 + 2,
+                    color: `hsl(${hue + i * 20}, 100%, 60%)`,
+                    speedX: (Math.random() - 0.5) * 3,
+                    speedY: (Math.random() - 0.5) * 3,
+                    life: 1
+                });
+            }
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.life -= 0.02;
+                p.x += p.speedX;
+                p.y += p.speedY;
+                p.size *= 0.97;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                if (p.life <= 0) particles.splice(index, 1);
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Image preview
+        function previewImage(input) {
+            const display = document.getElementById('file-name-display');
+            const preview = document.getElementById('image-preview');
+            if (input.files && input.files[0]) {
+                display.textContent = 'Selected: ' + input.files[0].name;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function showSpinner() {
+            document.getElementById('spinner').style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>
