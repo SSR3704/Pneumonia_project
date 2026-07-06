@@ -1,5 +1,6 @@
 
 import os
+import gdown
 import numpy as np
 from PIL import Image
 import cv2
@@ -19,6 +20,19 @@ from reportlab.lib.units import inch
 
 import matplotlib
 matplotlib.use('Agg')
+
+# Download model if not present
+MODEL_PATH = "model_weights/vgg19_model_01.h5"
+if not os.path.exists(MODEL_PATH):
+    os.makedirs('model_weights', exist_ok=True)
+    gdown.download(
+        'https://drive.google.com/uc?id=1m7wdnbRmtVoC9VPbM-55cbqGzDTBUqaq',
+        MODEL_PATH,
+        quiet=False
+    )
+
+# Load model
+model = load_model(MODEL_PATH)
 
 # Load model
 model = load_model("model_weights/vgg19_model_01.h5")
